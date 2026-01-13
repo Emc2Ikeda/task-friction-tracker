@@ -1,4 +1,3 @@
-import streamlit as st
 import sqlite3
 
 def connect_db(db_name='data/task_database.db'):
@@ -6,6 +5,7 @@ def connect_db(db_name='data/task_database.db'):
     cursor = conn.cursor()
     return conn, cursor
 
+# TODO: Check if data type for planned and completed time is appropriate
 # Creates task_logs and tasks tables if they do not exist
 def create_tables(cursor):
     # Tasks
@@ -32,8 +32,34 @@ def initialize_db():
     conn, cursor = connect_db()
     create_tables(cursor)
     conn.commit()
-    st.write("Database initialized and tables created if they did not exist.")
     return conn, cursor
- 
-if __name__ == "__main__":
-    initialize_db()
+
+##########################################
+#### CRUD operations for tasks table #####
+##########################################
+
+# Create a new task
+def add_task(task_name):
+    conn, cursor = connect_db()
+    try:    
+        cursor.execute(
+            "INSERT INTO tasks (task_name) VALUES (?)",
+            (task_name,)
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+# Read all tasks
+def show_tasks():
+    conn, cursor = connect_db()
+    try:
+        cursor.execute("SELECT * FROM tasks")
+        tasks = cursor.fetchall()
+    finally:
+        conn.close()
+    return tasks
+
+##########################################
+#### CRUD operations for tasks log #######
+##########################################

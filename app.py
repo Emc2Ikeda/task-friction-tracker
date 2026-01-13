@@ -1,6 +1,7 @@
 import streamlit as st
-import database as database
+import database
 
-st.title("Hello, Streamlit!")
-st.write("Welcome to your first Streamlit app.")
+st.title("Task Friction Tracker")
 database.initialize_db()
+st.write("Task List:")
+st.write(database.show_tasks())
