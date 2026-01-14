@@ -63,3 +63,32 @@ def show_tasks():
 ##########################################
 #### CRUD operations for tasks log #######
 ##########################################
+def log_completion_time(task_id, planned_time, actual_time, is_complete):
+    conn, cursor = connect_db()
+
+    # Convert datetimes to TEXT
+    planned_str = planned_time.isoformat() if planned_time else None
+    actual_str = actual_time.isoformat() if actual_time else None
+
+    try:
+        cursor.execute("""
+            INSERT INTO task_logs (
+                task_id, 
+                planned_completion_time,
+                actual_completion_time, 
+                completed
+            ) VALUES (?, ?, ?, ?)
+        """, (task_id, planned_str, actual_str, is_complete))
+
+        conn.commit()
+    finally:
+        conn.close()
+
+def show_task_logs():
+    conn, cursor = connect_db()
+    try:
+        cursor.execute("SELECT * FROM task_logs")
+        logs = cursor.fetchall()
+    finally:
+        conn.close()
+    return logs
