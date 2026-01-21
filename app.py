@@ -3,6 +3,8 @@ from datetime import datetime
 import database
 
 st.title("Task Friction Tracker")
+# Initialize the database
+database.initialize_db()
 
 # Add tasks here
 with st.form("Add Tasks:"):
@@ -12,8 +14,12 @@ with st.form("Add Tasks:"):
         database.add_task(task_name)
         st.write(f"Task '{task_name}' added.")
 
-database.initialize_db()
+# If the database is empty, prompt user to add tasks to prevent downstream errors.
 tasks = database.show_tasks()
+if not tasks:
+    st.warning("No tasks found. Please add tasks to begin tracking.")
+    st.stop()
+
 task_name_to_id = {task[1]: task[0] for task in tasks}
 st.write("Task List:")
 selected_task_name = st.selectbox("Select a task", options=[task[1] for task in tasks])
