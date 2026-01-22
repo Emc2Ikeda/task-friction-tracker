@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 
 def connect_db(db_name='data/task_database.db'):
     conn = sqlite3.connect(db_name)
@@ -92,3 +93,17 @@ def show_task_logs():
     finally:
         conn.close()
     return logs
+
+def show_task_logs_for_task(task_id):
+    conn, cursor = connect_db()
+    try:
+        cursor.execute("SELECT * FROM task_logs WHERE task_id = ?", (task_id,))
+        logs = cursor.fetchall()
+    finally:
+        conn.close()
+    return logs
+
+def parse_datetime(dt):
+    if dt:
+        return datetime.fromisoformat(dt)
+    return None

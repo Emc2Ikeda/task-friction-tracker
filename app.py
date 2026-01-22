@@ -26,6 +26,33 @@ selected_task_name = st.selectbox("Select a task", options=[task[1] for task in 
 
 selected_task_id = task_name_to_id[selected_task_name]
 
+# Show task logs for the selected task
+st.write(f"Logs for task: {selected_task_name}")
+task_logs = database.show_task_logs_for_task(selected_task_id)
+st.write(task_logs)
+
+# Calculate and display completion rate
+total_logs = len(task_logs)
+completed_logs_sum = sum(1 for log in task_logs if log[4])
+completed_task_logs = [log for log in task_logs if log[4]]
+completion_rate = (completed_logs_sum / total_logs * 100) if total_logs > 0 else 0
+st.write(f"Completion Rate: {completion_rate:.2f}%")
+
+# Calculate and display average delay
+if completed_task_logs:
+    total_delay = 0
+    for log in completed_task_logs:
+        planned_time = database.parse_datetime(log[2])
+        actual_time = database.parse_datetime(log[3])
+        if planned_time and actual_time:
+            delay = (actual_time - planned_time).total_seconds()
+            total_delay += delay
+    average_delay_seconds = total_delay / len(completed_task_logs)
+    average_delay_minutes = average_delay_seconds / 60
+    st.write(f"Average Delay: {average_delay_minutes:.2f} minutes")
+else:
+    st.write("Average Delay: N/A (no completed tasks)")
+
 # Log task completion time here
 # TODO: List the following limits of form entry in ReadMe
    # 1. Time cannot be set to precise minute. Round estimated completion time to nearest 5 minutes.
