@@ -1,7 +1,7 @@
 import streamlit as st
 from datetime import datetime
 import database
-from insights import get_completion_rate, get_average_delay
+from insights import get_completion_rate, get_average_delay, predict_task_completion
 
 st.title("Task Friction Tracker")
 # Initialize the database
@@ -61,6 +61,12 @@ actual_display = actual_datetime.strftime("%I:%M %p")
 st.write(f"Actual completion time:", actual_display)
 
 now = datetime.now()
+
+# Predict whether the planned task is likely to be completed on time based on historical data.
+if st.button("Predict task friction"):
+    prediction = predict_task_completion(task_id=selected_task_id, planned_time=planned_datetime)
+    st.write("AI Prediction:")
+    st.write(prediction)
 
 with st.form("Log Task Completion Time:"):
     completed = st.checkbox("Completed")
