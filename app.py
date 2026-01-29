@@ -1,6 +1,7 @@
 import streamlit as st
 from datetime import datetime
 import database
+from insights import get_completion_rate, get_average_delay
 
 st.title("Task Friction Tracker")
 # Initialize the database
@@ -32,33 +33,18 @@ task_logs = database.show_task_logs_for_task(selected_task_id)
 st.write(task_logs)
 
 # Calculate and display completion rate
-total_logs = len(task_logs)
-completed_logs_sum = sum(1 for log in task_logs if log[4])
-completed_task_logs = [log for log in task_logs if log[4]]
-completion_rate = (completed_logs_sum / total_logs * 100) if total_logs > 0 else 0
+
+completion_rate = get_completion_rate(selected_task_id)
 st.write(f"Completion Rate: {completion_rate:.2f}%")
 
 # Calculate and display average delay
-if completed_task_logs:
-    total_delay = 0
-    for log in completed_task_logs:
-        planned_time = database.parse_datetime(log[2])
-        actual_time = database.parse_datetime(log[3])
-        if planned_time and actual_time:
-            delay = (actual_time - planned_time).total_seconds()
-            total_delay += delay
-    average_delay_seconds = total_delay / len(completed_task_logs)
-    average_delay_minutes = average_delay_seconds / 60
+average_delay_minutes = get_average_delay(selected_task_id)
+if average_delay_minutes is not None:
     st.write(f"Average Delay: {average_delay_minutes:.2f} minutes")
 else:
     st.write("Average Delay: N/A (no completed tasks)")
 
 # Log task completion time here
-# TODO: List the following limits of form entry in ReadMe
-   # 1. Time cannot be set to precise minute. Round estimated completion time to nearest 5 minutes.
-   # 2. Actual completion time cannot be before planned completion time.
-   # 3. Hours are in 24-hour format.
-   # 4. Both planned and actual completion times must be provided and cannot be in the past.
 
 # Set planned completion time here
 planned_date = st.date_input("Planned date")
