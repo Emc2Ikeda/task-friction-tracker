@@ -3,7 +3,7 @@ from database import show_task_logs_for_task, parse_datetime
 import datetime
 import torch
 import streamlit as st
-from transformers import AutoTokenizer, AutomodelForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 ########################################################
 ### Non-AI Functions ###################################
@@ -11,6 +11,19 @@ from transformers import AutoTokenizer, AutomodelForSeq2SeqLM
 # Summarize task completion rate & average delay based on historical data.
 def get_task_summary(task_id):
     pass
+
+# Helper function to classify friction level to feed to FLAN-T5. Returns either low or high friction.
+def _classify_friction(completion_rate, average_delay,
+                      completion_threshold=0.5,
+                      delay_threshold=60):
+    
+    if completion_rate < completion_threshold:
+        return "high"
+    
+    if average_delay is not None and average_delay > delay_threshold:
+        return "high"
+
+    return "low"
 
 # Helper function to fetch task logs
 def _get_task_logs(task_id):
@@ -30,7 +43,7 @@ def get_completion_rate(task_id):
     task_logs = _get_task_logs(task_id)
     total_logs = len(task_logs)
     completed_logs_sum = sum(1 for log in task_logs if log[4])
-    completion_rate = (completed_logs_sum / total_logs * 100) if total_logs > 0 else 0
+    completion_rate = (completed_logs_sum / total_logs) if total_logs > 0 else 0
     return completion_rate
 
 # Calculate average delay in minutes
@@ -54,46 +67,45 @@ def get_average_delay(task_id):
 ########################################################
 ### AI Functions #######################################
 ########################################################
+""" TODO: Calculate probability of on-time completion using logistic regression, 
+    then feed this to FLAN-t5 for explanation.
+"""
 
 # Helper function to load FLAN-T5. Use cache to avoid reloading on every call.
 @st.cache_resource
 def _load_model():  
     model_name = "google/flan-t5-small"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutomodelForSeq2SeqLM.from_pretrained(model_name)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
     return tokenizer, model
 
 # Generate prediction context to feed into FLAN-T5 model
-def _generate_prediction_context(task_id, planned_datetime):
-    prediction_context = {
-        "task_name": get_task_name(task_id),
-        "completion_rate": get_completion_rate(task_id),
-        "average_delay": get_average_delay(task_id) or 0,
-        "planned_time": planned_datetime.strftime("%I:%M %p")
-    }
-    return prediction_context
+# def _generate_prediction_context(task_id, planned_datetime):
+#     prediction_context = {
+#         "completion_rate": get_completion_rate(task_id),
+#         "average_delay": get_average_delay(task_id) or 0,
+#         "planned_time": planned_datetime.strftime("%I:%M %p")
+#     }
+#     return prediction_context
 
-# Predict whether the planned task is likely to be completed on time based on historical data. 
-def predict_task_completion(task_id, planned_time):
+# Predict whether the planned task is likely to be completed on time based on 
+def show_friction_classification(task_id):
+    completion_rate = get_completion_rate(task_id)
+    average_delay = get_average_delay(task_id) or 0
+    friction_label = _classify_friction(completion_rate, average_delay)
     tokenizer, model = _load_model()
-    prediction_context = _generate_prediction_context(task_id, planned_time)
-    # recent_logs_text = "\n".join(
-    #     f"- {log}" for log in prediction_context["recent_logs"]
-    # )
-    prompt = f"""You are analyzing task performance history for a user.
-    Task name: {prediction_context['task_name']}
-    Historical data: 
-        - completion rate: {prediction_context['completion_rate']}%
-        - average delay: {prediction_context['average_delay']} minutes
-    Based on this information: 
-        1. Predict whether the next task instance planned at {prediction_context['planned_time']} will be completed on time.
-        2. Answer with either "low friction" or "high friction". 
-        3. Provide a brief explanation for your prediction.
-    Label: <low friction | high friction>
-    Reason: <one sentence>
+    prompt = f"""
+    Task statistics:
+    - Completion rate: {completion_rate*100:.1f}%
+    - Average delay: {average_delay:.1f} minutes
+    - Friction classification: {friction_label}
+
+    Complete the sentence: 
+
+    This task shows {friction_label} friction because
     """
     inputs = tokenizer(prompt, return_tensors="pt", truncation=True)
     # set num_beams to 2-4 for coherent answers. Higher values lower runtime
-    outputs = model.generate(**inputs, max_length=120, num_beams=2)
+    outputs = model.generate(**inputs, max_length=120, num_beams=4)
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
