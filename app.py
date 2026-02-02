@@ -68,21 +68,11 @@ st.write(f"Actual completion time:", actual_display)
 
 now = datetime.now()
 
-# Predict whether the planned task is likely to be completed on time based on historical data.
-if st.button("Predict task friction"):
-    prediction = predict_task_completion(task_id=selected_task_id, planned_time=planned_datetime)
-    st.write("AI Prediction:")
-    st.write(prediction)
-
 with st.form("Log Task Completion Time:"):
     completed = st.checkbox("Completed")
     submitted = st.form_submit_button("Log Completion Time")
     # Check if entered time is valid. Stop submission and display error if invalid.
     if submitted:
-        if planned_datetime < now:
-            st.error("Planned completion time cannot be in the past.")
-            st.stop()
-        
         if completed and actual_datetime > now:
             st.error("Actual completion time cannot be in the future.")
             st.stop()
@@ -93,6 +83,7 @@ with st.form("Log Task Completion Time:"):
             st.write("Task not completed; actual time not logged.")
 
         database.log_completion_time(task_id=selected_task_id, planned_time=planned_datetime, actual_time=actual_datetime, is_complete=completed)
+        st.write(f"Delay: {database.calculate_delay(planned_datetime, actual_datetime)} minutes")
         st.write("Task completion time logged.")
 
 # Debug code to show logged tasks
