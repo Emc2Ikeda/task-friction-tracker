@@ -6,7 +6,6 @@ def connect_db(db_name='data/task_database.db'):
     cursor = conn.cursor()
     return conn, cursor
 
-# TODO: Check if data type for planned and completed time is appropriate
 # Creates task_logs and tasks tables if they do not exist
 def create_tables(cursor):
     # Tasks
@@ -107,3 +106,11 @@ def parse_datetime(dt):
     if dt:
         return datetime.fromisoformat(dt)
     return None
+
+# Calculates delay of task completion in minutes. 
+# Return only positive delay. Tasks completed early returns 0.
+def calculate_delay(planned_time, actual_time):
+    if not actual_time:
+        return None
+    delay = (actual_time - planned_time).total_seconds() / 60
+    return max(delay, 0)  # Only return positive delay
