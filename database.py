@@ -1,7 +1,11 @@
 import sqlite3
+import os
 from datetime import datetime
 
 def connect_db(db_name='data/task_database.db'):
+    # Ensure the data directory exists
+    os.makedirs(os.path.dirname(db_name), exist_ok=True)
+    
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
     return conn, cursor
@@ -32,6 +36,7 @@ def initialize_db():
     conn, cursor = connect_db()
     create_tables(cursor)
     conn.commit()
+    conn.close()
     return conn, cursor
 
 ##########################################
