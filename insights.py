@@ -1,7 +1,7 @@
 # Module for AI insight on task friction
 from database import show_task_logs_for_task, parse_datetime
-import datetime
-import torch
+# import datetime
+# import torch
 import streamlit as st
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
@@ -72,7 +72,7 @@ def get_average_delay(task_id):
 """
 
 # Helper function to load FLAN-T5. Use cache to avoid reloading on every call.
-@st.cache_resource
+@st.cache_resource(show_spinner=True)
 def _load_model():  
     model_name = "google/flan-t5-small"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
